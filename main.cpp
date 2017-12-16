@@ -5,5 +5,6 @@ int main() {
   std::cout << "?" << std::endl;
   std::cout << "!" << std::endl;
   std::cout << "~" << std::endl;
+  std::cout << "mac" << std::endl;
   return 0;
 }
