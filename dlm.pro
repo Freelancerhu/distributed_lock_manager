@@ -14,10 +14,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-INCLUDEPATH +=
+INCLUDEPATH += cpp_redis/includes/ \
+  cpp_redis/tacopie/includes/
 
 SOURCES += main.cpp
 
 HEADERS += redis-cc/hiredis-cc-debug.h
 
 DISTFILES += .gitignore
+
+LIBS += -L$$sprintf("%1/cpp_redis/msvc15/x64/Debug/", $$_PRO_FILE_PWD_) -lcpp_redis -ltacopie
+
+win32 {
+  LIBS += -lws2_32
+}
