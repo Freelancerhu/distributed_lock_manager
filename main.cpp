@@ -1,12 +1,8 @@
 #include <iostream>
 
+#include "redis-cc/hiredis-cc-debug.h"
+
 int main() {
-  std::cout << "hello world" << std::endl;
-  std::cout << "?" << std::endl;
-  std::cout << "!" << std::endl;
-  std::cout << "~" << std::endl;
-  std::cout << "mac" << std::endl;
-  std::cout << "mbp" << std::endl;
-  std::cout << "win" << std::endl;
+  redis_cc::test();
   return 0;
 }
