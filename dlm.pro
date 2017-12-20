@@ -15,7 +15,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 INCLUDEPATH += cpp_redis/includes/ \
-  cpp_redis/tacopie/includes/
+  cpp_redis/tacopie/includes/ \
+  C:/Users/felix/Downloads/boost_1_66_0/boost_1_66_0/
 
 SOURCES += main.cpp
 
@@ -24,6 +25,8 @@ HEADERS += redis-cc/hiredis-cc-debug.h
 DISTFILES += .gitignore
 
 LIBS += -L$$sprintf("%1/cpp_redis/msvc15/x64/Debug/", $$_PRO_FILE_PWD_) -lcpp_redis -ltacopie
+
+LIBS += -L"C:\Users\felix\Downloads\boost_1_66_0\boost_1_66_0\stage\lib"
 
 win32 {
   LIBS += -lws2_32
