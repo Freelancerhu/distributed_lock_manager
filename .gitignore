@@ -1,1 +1,9 @@
-*.user
+# vs build
+*.tlog
+*.idb
+*.lib
+*.pdb
+*.obj
+
+# g++ build
+*.o
