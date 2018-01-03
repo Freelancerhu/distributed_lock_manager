@@ -33,7 +33,7 @@ namespace dlm {
       std::cout << "SetKeyValue failed." << std::endl;
       return false;
     }
-    std::cout << "Oops, in SetKeyValue, some creepy thing happens." << std::endl;
+    std::cout << "Oops, in SetKeyValue, some creepy things happened." << std::endl;
     return false;
   }
    
@@ -75,7 +75,7 @@ namespace dlm {
         return false;
       } 
     }
-    std::cout << "Oops, in UpdateExpire, some creepy thing happens." << std::endl;
+    std::cout << "Oops, in UpdateExpire, some creepy things happened." << std::endl;
     return false;
   }
     
@@ -117,7 +117,7 @@ namespace dlm {
         return false;
       } 
     }
-    std::cout << "Oops, in DelKeyValue, some creepy thing happens." << std::endl;
+    std::cout << "Oops, in DelKeyValue, some creepy things happened." << std::endl;
     return false;
   }
 
