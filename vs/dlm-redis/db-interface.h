@@ -10,24 +10,16 @@
 namespace dlm {
 class DBInterface {
 public:
-  DBInterface(const std::string &ip = "127.0.0.1", uint16_t port = 6379);
-
   // sets {key, value} if key does not exist, returns false on failure.
-  virtual bool SetKeyValue(const std::string &key, uint64_t value, std::chrono::milliseconds expire);
+  virtual bool SetKeyValue(const std::string &key, std::string value, std::chrono::milliseconds expire) = 0;
 
   // sets {key, value} if key does not exist or value matches, returns false on failure.
-  virtual bool UpdateExpire(const std::string &key, uint64_t value, std::chrono::milliseconds expire);
+  virtual bool UpdateExpire(const std::string &key, std::string value, std::chrono::milliseconds expire) = 0;
 
   // deletes {key, value} if value matches, returns false on failure.
-  virtual bool DelKeyValue(const std::string &key, uint64_t value);
+  virtual bool DelKeyValue(const std::string &key, std::string value) = 0;
 
   virtual ~DBInterface() = default;
-  
-  void DBInterfaceTest();
-
-private:
-  cpp_redis::client client;
-  
 };
 
 } // namespace dlm
