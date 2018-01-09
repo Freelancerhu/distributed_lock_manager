@@ -3,7 +3,7 @@
 #include "cpp_redis/cpp_redis"
 
 #include <iostream>
-#include <string> // to_string
+#include <string>
 #include <vector> // client.del()
 #include <chrono>
 
