@@ -97,7 +97,7 @@
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\freel\Desktop\dlm\vs\dlm-redis;..\..\include;..\..\cpp_redis\includes;..\..\cpp_redis\tacopie\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\vs\dlm-redis;..\..\include;..\..\cpp_redis\includes;..\..\cpp_redis\tacopie\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
