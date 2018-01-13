@@ -7,6 +7,7 @@ namespace dlm {
     //! Enable logging
     client.connect(ip, port,
       [](const std::string& host, std::size_t port, cpp_redis::client::connect_state status) {
+      std::cout << "connecting" << std::endl;
       if (status == cpp_redis::client::connect_state::dropped) {
         std::cout << "client disconnected from " << host << ":" << port << std::endl;
       }
@@ -14,7 +15,7 @@ namespace dlm {
   }
 
   // sets {key, value} if key does not exist, returns false on failure.
-  DBResult DBRedis::SetKeyValue(const std::string &key, const std::string &value, std::chrono::milliseconds expire) {
+  DBResult DBRedis::SetKeyValue(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire) {
     //std::future< reply > 	set_advanced (const std::string &key, const std::string &value, bool ex=false, int ex_sec=0, 
     //                                bool px=false, int px_milli=0, bool nx=false, bool xx=false)
     //nx(SET if it is not exist)
@@ -40,7 +41,7 @@ namespace dlm {
   }
 
   // sets {key, value} if key does not exist or value matches, returns false on failure.
-  DBResult DBRedis::UpdateExpire(const std::string &key, const std::string &value, std::chrono::milliseconds expire) {
+  DBResult DBRedis::UpdateExpire(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire) {
     auto haveKeyFuture = client.exists(std::vector<std::string>{key});
     client.sync_commit();
     // show if the key exists
@@ -123,16 +124,41 @@ namespace dlm {
     return DBResult::kDelKeyFunFailed;
   }
 
+  DBResult DBRedis::SelectDB(const int &index) {
+    auto selectFlag = client.select(index);
+    client.sync_commit();
+    std::string tempSelectFlag = selectFlag.get().as_string();
+    if (tempSelectFlag == "OK")
+      return DBResult::kSelectDBSucceed;
+    else if (tempSelectFlag == "ERR invalid DB index")
+      return DBResult::kSelectDBFailed;
+    return DBResult::kSelectFunFailed;
+  }
+
   void DBRedis::DBInterfaceTest() {
+    //auto selectFlag = client.select(1);
+    //client.sync_commit();
+    //std::string tempDelFlag = selectFlag.get().as_string();
+    //if (tempDelFlag == "OK")
+    //  std::cout << "Success string." << std::endl;
+    //std::cout << "select = " << tempDelFlag << std::endl;
+    //selectFlag = client.select(100000);
+    //client.sync_commit();
+    //tempDelFlag = selectFlag.get().as_string();
+    //if (tempDelFlag == "ERR invalid DB index")
+    //  std::cout << "fail string." << std::endl;
+    //std::cout << "select = " << tempDelFlag << std::endl;
+
     std::chrono::milliseconds e{ 1000000 };
     std::chrono::milliseconds r{ 5000000 };
     std::cout << "interface test." << std::endl;
     std::cout << "=======setkeyvalue=======" << std::endl;
     std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(SetKeyValue("hu", "1223", e)) << std::endl;
-    std::cout << "=======updateexpire=======" << std::endl;
-    std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(UpdateExpire("hu", "1223", r)) << std::endl;
-    std::cout << "=======delkeyvalue=======" << std::endl;
-    std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(DelKeyValue("hu", "12123")) << std::endl;
+    std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(SetKeyValue("hu", "1333", e)) << std::endl;
+    //std::cout << "=======updateexpire=======" << std::endl;
+    //std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(UpdateExpire("hu", "1223", r)) << std::endl;
+    //std::cout << "=======delkeyvalue=======" << std::endl;
+    //std::cout << "the result is " << static_cast<std::underlying_type<DBResult>::type>(DelKeyValue("hu", "12123")) << std::endl;
 
     std::cout << "function finished." << std::endl;
   }

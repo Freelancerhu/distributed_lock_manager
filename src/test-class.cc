@@ -20,7 +20,6 @@ namespace dlm {
   }
 
   void TestClass::Test() {
-    // std::string tempRe = "";
     std::chrono::milliseconds e{ 10000 };
     client.set_advanced("hu", std::to_string(25), false, false,
       true, int(e.count()), true, false, [](cpp_redis::reply& reply) {
@@ -29,14 +28,6 @@ namespace dlm {
       else if (reply.ok() == true) std::cout << "success" << std::endl;
       else std::cout << "fail" << std::endl;
     });
-
-    // client.set_advanced("hu", std::to_string(35), false, false,
-    //   true, int(e.count()), false, true, [](cpp_redis::reply& reply) {
-    //   std::cout << "hu" << " : " << 25 << " : " << 5000000 << " : " << reply << std::endl;
-    //   if (reply.is_null() == true) std::cout << "has been setted" << std::endl;
-    //   else if (reply.ok() == true) std::cout << "success" << std::endl;
-    //   else std::cout << "fail" << std::endl;
-    // });
 
     client.pexpire("hu", int(e.count()), [](cpp_redis::reply& reply) {
       std::cout << "hu" << " : " << 25 << " : " << 15000 << " : " << reply << std::endl;
