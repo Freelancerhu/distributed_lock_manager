@@ -10,6 +10,8 @@
 #include <iostream>
 #include <random> // std::default_random_engine
 #include <algorithm> // std::shuffle
+#include <thread> // std::this_thread::sleep_for
+#include <atomic> // atomic_flag
 
 namespace dlm {
 extern enum class DBResult;
@@ -49,6 +51,7 @@ private:
   std::vector<int> have_lock_num_; // show the number of locks which we have got.
   std::chrono::milliseconds time_out_limit_{ 50 }; // the time prevents the client from remaining blocked for a long time
                                              //trying to talk with a Redis node which is down
+  static std::atomic_flag lock;
 };
 
 } // namespace DMutex

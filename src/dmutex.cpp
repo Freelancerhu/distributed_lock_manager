@@ -7,6 +7,7 @@ DMutexImpl::DMutexImpl(const std::vector<int> &hosts)
       : hosts_(hosts) {
   }
 
+std::atomic_flag DMutex::lock = ATOMIC_FLAG_INIT;
 
 DMutex::DMutex(const std::vector<int> &hosts) {
   DBRedis db_redis_client_("127.0.0.1", 6379);
@@ -32,12 +33,16 @@ void DMutex::Lock(const std::string &key, const std::string &value) {
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
     for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
+      while (lock.test_and_set(std::memory_order_acquire)) {
+        std::cout << "waiting..." << std::endl;
+      };
       std::cout << "db #" << temp_vec[lock_index] << std::endl;
       //select another db
       DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
       if (temp_res == DBResult::kSelectDBSucceed) {
         // try to have a lock
         DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
+        lock.clear(std::memory_order_release);
         if (temp_set_res == DBResult::kSetKeySucceed) {
           std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
           have_lock_num_.push_back(temp_vec[lock_index]);
@@ -95,9 +100,13 @@ void DMutex::UnlockAll(const std::string &key, const std::string &value) {
   std::cout << "UnlockAll function starts" << std::endl;
   for (auto lock_index : (impl_->hosts_)) {
     //select another db
+    while (lock.test_and_set(std::memory_order_acquire)) {
+      std::cout << "waiting..." << std::endl;
+    };
     DBResult temp_sele_res = db_redis_client_.SelectDB(lock_index);
     if (temp_sele_res == DBResult::kSelectDBSucceed) {
       DBResult temp_del_res = db_redis_client_.DelKeyValue(key, value);
+      lock.clear(std::memory_order_release);
       if (temp_del_res == DBResult::kDelKeySucceed) {
         std::cout << "Del key in #" << lock_index << " succeed." << std::endl;
         continue;
@@ -133,12 +142,16 @@ void DMutex::TryLock(const std::string &key, const std::string &value) {
   uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
   std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
   for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
+    while (lock.test_and_set(std::memory_order_acquire)) {
+      std::cout << "waiting..." << std::endl;
+    };
     std::cout << "db #" << temp_vec[lock_index] << std::endl;
     //select another db
     DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
     if (temp_res == DBResult::kSelectDBSucceed) {
       // try to have a lock
       DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
+      lock.clear(std::memory_order_release);
       if (temp_set_res == DBResult::kSetKeySucceed) {
         std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
         have_lock_num_.push_back(temp_vec[lock_index]);
@@ -191,12 +204,16 @@ void DMutex::TryLock(const std::string &key, const std::string &value, const std
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
     for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
+      while (lock.test_and_set(std::memory_order_acquire)) {
+        std::cout << "waiting..." << std::endl;
+      };
       std::cout << "db #" << temp_vec[lock_index] << std::endl;
       //select another db
       DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
       if (temp_res == DBResult::kSelectDBSucceed) {
         // try to have a lock
         DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
+        lock.clear(std::memory_order_release);
         if (temp_set_res == DBResult::kSetKeySucceed) {
           std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
           have_lock_num_.push_back(temp_vec[lock_index]);
