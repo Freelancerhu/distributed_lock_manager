@@ -7,7 +7,7 @@ DMutexImpl::DMutexImpl(const std::vector<int> &hosts)
       : hosts_(hosts) {
   }
 
-std::atomic_flag DMutex::lock = ATOMIC_FLAG_INIT;
+std::mutex DMutex::mtx_;
 
 DMutex::DMutex(const std::vector<int> &hosts) {
   DBRedis db_redis_client_("127.0.0.1", 6379);
@@ -25,7 +25,7 @@ bool DMutex::TryLock() {
   return false;
 }
 
-void DMutex::Lock(const std::string &key, const std::string &value) {
+bool DMutex::Lock(const std::string &key, const std::string &value) {
   // try to get lock until get lock
   std::cout << "Lock function starts" << std::endl;
   while (true) {
@@ -33,16 +33,14 @@ void DMutex::Lock(const std::string &key, const std::string &value) {
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
     for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
-      while (lock.test_and_set(std::memory_order_acquire)) {
-        std::cout << "waiting..." << std::endl;
-      };
+      mtx_.lock();
       std::cout << "db #" << temp_vec[lock_index] << std::endl;
       //select another db
       DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
       if (temp_res == DBResult::kSelectDBSucceed) {
         // try to have a lock
         DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
-        lock.clear(std::memory_order_release);
+        mtx_.unlock();
         if (temp_set_res == DBResult::kSetKeySucceed) {
           std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
           have_lock_num_.push_back(temp_vec[lock_index]);
@@ -79,34 +77,78 @@ void DMutex::Lock(const std::string &key, const std::string &value) {
     if ((have_lock_num_.size() >= ((impl_->hosts_).size() / 2) + 1) &&
       (GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count())) {
       std::cout << "lock succeed." << std::endl;
-      // std::cout << "time = " << (GetCurrentMilliseconds().count() - start_time_milliseconds) << std::endl;
-      while (GetCurrentMilliseconds().count() - start_time_milliseconds <= run_time_.count()) {
-         //std::cout << "time = " << (GetCurrentMilliseconds().count() - start_time_milliseconds) << std::endl;
-      }
+
+
+
+      //WaitUntil(start_time_milliseconds, run_time_.count());
+      timeout_queue_.AsyncRun();
+      timeout_queue_.PushEvent([this, key, value]() {
+        KeepLock(key, value, lock_validity_time_);
+        return true;
+      }, std::chrono::milliseconds(lock_validity_time_.count() /3 * 2));
+
+
+
+      return true;
     }
     else {
       std::cout << "lock failed." << std::endl;
     }
     // we did not got enough lock, so we unlock all lock that we have.
     UnlockAll(key, value);
-    uint64_t wait_start_time_ = GetCurrentMilliseconds().count();
-    while (GetCurrentMilliseconds().count() - wait_start_time_ <= lock_validity_time_.count()) {
-      //std::cout << "time = " << (GetCurrentMilliseconds().count() - start_time_milliseconds) << std::endl;
+    WaitUntil(GetCurrentMilliseconds().count(), lock_validity_time_.count());
+  }
+}
+
+
+
+
+void DMutex::KeepLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire) {
+  for (int lock_index = 0; lock_index < have_lock_num_.size(); ++lock_index) {
+    mtx_.lock();
+    std::cout << "db #" << lock_index << std::endl;
+    DBResult temp_res = db_redis_client_.SelectDB(have_lock_num_[lock_index]);
+    if (temp_res == DBResult::kSelectDBSucceed) {
+      // try to have a lock
+      DBResult temp_set_res = db_redis_client_.UpdateExpire(key, value, lock_validity_time_);
+      mtx_.unlock();
+      if (temp_set_res == DBResult::kUpdateKeySucceed) {
+        std::cout << "Get lock in #" << have_lock_num_[lock_index] << " succeed." << std::endl;
+        continue;
+      }
+      // failed to get the lock, therefore try again.
+      else {
+        std::cout << "Failed to get the lock in  #" << have_lock_num_[lock_index] << " try again." << std::endl;
+        --lock_index;
+        continue;
+      }
+    }
+    // select DB failed.
+    else if (temp_res == DBResult::kUpdateKeyFailed) {
+      std::cout << "Select DB Failed." << std::endl;
+      continue;
+    }
+    else {
+      std::cout << "Select DB Function Failed." << std::endl;
+      continue;
     }
   }
 }
 
+
+
+
+
 void DMutex::UnlockAll(const std::string &key, const std::string &value) {
   std::cout << "UnlockAll function starts" << std::endl;
+  timeout_queue_.Quit();
   for (auto lock_index : (impl_->hosts_)) {
     //select another db
-    while (lock.test_and_set(std::memory_order_acquire)) {
-      std::cout << "waiting..." << std::endl;
-    };
+    mtx_.lock();
     DBResult temp_sele_res = db_redis_client_.SelectDB(lock_index);
     if (temp_sele_res == DBResult::kSelectDBSucceed) {
       DBResult temp_del_res = db_redis_client_.DelKeyValue(key, value);
-      lock.clear(std::memory_order_release);
+      mtx_.unlock();
       if (temp_del_res == DBResult::kDelKeySucceed) {
         std::cout << "Del key in #" << lock_index << " succeed." << std::endl;
         continue;
@@ -142,16 +184,14 @@ void DMutex::TryLock(const std::string &key, const std::string &value) {
   uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
   std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
   for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
-    while (lock.test_and_set(std::memory_order_acquire)) {
-      std::cout << "waiting..." << std::endl;
-    };
+    mtx_.lock();
     std::cout << "db #" << temp_vec[lock_index] << std::endl;
     //select another db
     DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
     if (temp_res == DBResult::kSelectDBSucceed) {
       // try to have a lock
       DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
-      lock.clear(std::memory_order_release);
+      mtx_.unlock();
       if (temp_set_res == DBResult::kSetKeySucceed) {
         std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
         have_lock_num_.push_back(temp_vec[lock_index]);
@@ -188,7 +228,7 @@ void DMutex::TryLock(const std::string &key, const std::string &value) {
   if ((have_lock_num_.size() >= ((impl_->hosts_).size() / 2) + 1) &&
     GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {
     std::cout << "lock succeed." << std::endl;
-    while (GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {}
+    WaitUntil(start_time_milliseconds, lock_validity_time_.count());
     UnlockAll(key, value);
   }
   // we did not got enough lock, so we unlock all lock that we have.
@@ -204,16 +244,14 @@ void DMutex::TryLock(const std::string &key, const std::string &value, const std
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
     for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
-      while (lock.test_and_set(std::memory_order_acquire)) {
-        std::cout << "waiting..." << std::endl;
-      };
+      mtx_.lock();
       std::cout << "db #" << temp_vec[lock_index] << std::endl;
       //select another db
       DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
       if (temp_res == DBResult::kSelectDBSucceed) {
         // try to have a lock
         DBResult temp_set_res = db_redis_client_.SetKeyValue(key, value, lock_validity_time_);
-        lock.clear(std::memory_order_release);
+        mtx_.unlock();
         if (temp_set_res == DBResult::kSetKeySucceed) {
           std::cout << "Get lock in #" << temp_vec[lock_index] << " succeed." << std::endl;
           have_lock_num_.push_back(temp_vec[lock_index]);
@@ -250,7 +288,7 @@ void DMutex::TryLock(const std::string &key, const std::string &value, const std
     if ((have_lock_num_.size() >= ((impl_->hosts_).size() / 2) + 1) &&
       GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {
       std::cout << "lock succeed." << std::endl;
-      while (GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {}
+      WaitUntil(start_time_milliseconds, lock_validity_time_.count());
       UnlockAll(key, value);
       break;
     }
@@ -259,6 +297,7 @@ void DMutex::TryLock(const std::string &key, const std::string &value, const std
       UnlockAll(key, value);
     }
   } while (GetCurrentMilliseconds().count() - start_time_milliseconds < expire.count());
+  
 }
 
 std::chrono::milliseconds DMutex::GetCurrentMilliseconds() {
@@ -266,6 +305,10 @@ std::chrono::milliseconds DMutex::GetCurrentMilliseconds() {
     std::chrono::system_clock::now().time_since_epoch());
 }
 
-
+void DMutex::WaitUntil(const uint16_t &start_time, const uint16_t &limited_time) {
+  while (GetCurrentMilliseconds().count() - start_time <= limited_time) {
+    //std::cout << "time = " << (GetCurrentMilliseconds().count() - start_time_milliseconds) << std::endl;
+  }
+}
 
 } // namespace dlm

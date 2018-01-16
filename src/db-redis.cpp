@@ -20,8 +20,7 @@ namespace dlm {
     //                                bool px=false, int px_milli=0, bool nx=false, bool xx=false)
     //nx(SET if it is not exist)
     std::cout << "SetKeyValue starts." << std::endl;
-    auto tempKeyValueFuture = client.set_advanced(key, value, false, 0,
-      true, int(expire.count()), true, false);
+    auto tempKeyValueFuture = client.set_advanced(key, value, false, 0, true, int(expire.count()), true, false);
     client.sync_commit();
     auto tempRes = tempKeyValueFuture.get();
     if (tempRes.is_null() == true) {

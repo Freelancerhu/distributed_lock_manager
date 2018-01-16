@@ -2,6 +2,7 @@
 #define _DLM_DMUTEX_H_
 
 #include "db-redis.h"
+#include "timeout-queue.h"
 
 #include <memory>
 #include <string>
@@ -11,7 +12,7 @@
 #include <random> // std::default_random_engine
 #include <algorithm> // std::shuffle
 #include <thread> // std::this_thread::sleep_for
-#include <atomic> // atomic_flag
+#include <mutex>
 
 namespace dlm {
 extern enum class DBResult;
@@ -36,11 +37,13 @@ public:
   void Unlock();
   bool TryLock();
 
-  void Lock(const std::string &key, const std::string &value);
+  bool Lock(const std::string &key, const std::string &value);
   void UnlockAll(const std::string &key, const std::string &value);
   void TryLock(const std::string &key, const std::string &value);
   void TryLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire);
   std::chrono::milliseconds GetCurrentMilliseconds();
+  void WaitUntil(const uint16_t &start_time, const uint16_t &limited_time);
+  void KeepLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire);
 
 private:
   std::unique_ptr<DMutexImpl> impl_;
@@ -51,7 +54,11 @@ private:
   std::vector<int> have_lock_num_; // show the number of locks which we have got.
   std::chrono::milliseconds time_out_limit_{ 50 }; // the time prevents the client from remaining blocked for a long time
                                              //trying to talk with a Redis node which is down
-  static std::atomic_flag lock;
+  static std::mutex mtx_;
+  // Must be the first to be destroyed during destruction 
+  TimeoutQueue timeout_queue_;
+  // the status of lock
+  bool lock_status_ = false;
 };
 
 } // namespace DMutex
