@@ -32,22 +32,19 @@ public:
   DMutex(const std::vector<int> &hosts);
   DMutex(const DMutex &) = delete;
   DMutex(DMutex &&) = default;
-
-  void Lock();
-  void Unlock();
-  bool TryLock();
+  ~DMutex();
 
   bool Lock(const std::string &key, const std::string &value);
-  void UnlockAll(const std::string &key, const std::string &value);
-  void TryLock(const std::string &key, const std::string &value);
-  void TryLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire);
+  bool UnlockAll(const std::string &key, const std::string &value);
+  bool TryLock(const std::string &key, const std::string &value);
+  bool TryLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire);
   std::chrono::milliseconds GetCurrentMilliseconds();
   void WaitUntil(const uint16_t &start_time, const uint16_t &limited_time);
   void KeepLock(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire);
 
 private:
   std::unique_ptr<DMutexImpl> impl_;
-  std::chrono::milliseconds lock_validity_time_{ 60000 };
+  std::chrono::milliseconds lock_validity_time_{ 30000 };
   std::chrono::milliseconds run_time_{ 40000 }; // running time which is smaller than lock_validity_time_.
   DBRedis db_redis_client_; // suppose we are accessing Redis just locally from the same computer, and so forth.
                                                       //only the loopback interface(127.0.0.1)

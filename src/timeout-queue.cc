@@ -33,8 +33,11 @@ inline AtExit<Fn> MakeAtExit(Fn fn) {
 
 
 void TimeoutQueue::Worker() {
+  std::cout << "timeout-queue worker starts." << std::endl;
   while (!quit_.load()) { // not quit
+    std::cout << "quit_ = false." << std::endl;
     UniqueLockType<MutexType> lock(mtx_);
+    std::cout << "time_out_queue.size() = " << time_out_queue_.size() << std::endl;
     if (time_out_queue_.empty()) {
       if (events_out_of_queue_.load() == 0)
         all_done_.notify_all();
@@ -58,9 +61,10 @@ void TimeoutQueue::Worker() {
       });
     if (!quit_.load() && next_timeout <= Clock::now()) { // Clock::now() reach the next_timeout
       lock.unlock();
-      const auto is_repeat = next_event.function;
-
+      const auto is_repeat = next_event.function();
+      std::cout << "is_repeat" << std::endl;
       if (is_repeat) { // the pre funtion is true, set the next_timeout then insert the node into the time_out_queue_
+        std::cout << "is_repeat = true." << std::endl;
         next_timeout += next_event.period;
 
         lock.lock();
@@ -68,6 +72,7 @@ void TimeoutQueue::Worker() {
         new_event_.notify_one();
       }
     } else { // does not reach the next_timeout, insert the node into the time_out_queue_
+      std::cout << "is_repeat = false." << std::endl;
       time_out_queue_.insert(std::move(node));
     }
   }

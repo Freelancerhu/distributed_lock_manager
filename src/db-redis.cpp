@@ -14,6 +14,13 @@ namespace dlm {
     });
   }
 
+  DBRedis::~DBRedis() {
+    std::cout << "~~~~DBRedis" << std::endl;
+    client.cancel_reconnect();
+    client.disconnect(true);
+    std::cout << "~~~~~~~~DBRedis" << std::endl;
+  }
+
   // sets {key, value} if key does not exist, returns false on failure.
   DBResult DBRedis::SetKeyValue(const std::string &key, const std::string &value, const std::chrono::milliseconds &expire) {
     //std::future< reply > 	set_advanced (const std::string &key, const std::string &value, bool ex=false, int ex_sec=0, 

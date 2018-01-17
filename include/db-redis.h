@@ -30,7 +30,7 @@ namespace dlm {
     //select another DB
     virtual DBResult SelectDB(const int &index);
 
-    virtual ~DBRedis() = default;
+    virtual ~DBRedis();
 
     void DBInterfaceTest();
 
