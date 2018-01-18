@@ -14,7 +14,6 @@ public:
   using Clock = std::chrono::steady_clock;
   using TimePoint = Clock::time_point;
   using FunctionType = std::function<bool()>;
-  //using FunctionType = std::function<void(const std::string, const std::string, const std::chrono::milliseconds)>;
 
   struct Event {
     FunctionType function;

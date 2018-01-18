@@ -32,8 +32,6 @@ namespace dlm {
 
     virtual ~DBRedis();
 
-    void DBInterfaceTest();
-
   private:
     cpp_redis::client client;
   };

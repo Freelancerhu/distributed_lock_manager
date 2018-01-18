@@ -29,7 +29,7 @@ private:
 
 class DMutex {
 public:
-  DMutex(const std::vector<int> &hosts);
+  DMutex(const std::vector<int> &hosts, const std::chrono::milliseconds &temp_lock_validity_time_, const std::chrono::milliseconds &temp_run_time_);
   DMutex(const DMutex &) = delete;
   DMutex(DMutex &&) = default;
   ~DMutex();
@@ -44,8 +44,8 @@ public:
 
 private:
   std::unique_ptr<DMutexImpl> impl_;
-  std::chrono::milliseconds lock_validity_time_{ 30000 };
-  std::chrono::milliseconds run_time_{ 40000 }; // running time which is smaller than lock_validity_time_.
+  std::chrono::milliseconds lock_validity_time_{ 30000 }; // validity time of lock
+  std::chrono::milliseconds run_time_{ 20000 }; // running time which is smaller than lock_validity_time_.
   DBRedis db_redis_client_; // suppose we are accessing Redis just locally from the same computer, and so forth.
                                                       //only the loopback interface(127.0.0.1)
   std::vector<int> have_lock_num_; // show the number of locks which we have got.
