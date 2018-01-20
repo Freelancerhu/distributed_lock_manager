@@ -17,13 +17,11 @@ public:
   }
 
   void AsyncRun() {
-    std::cout << "timeout-queue async run." << std::endl;
     threads_.emplace_back(&TimeoutQueue::Worker, this);
   }
 
   template <class Fn, class Rep, class Period>
   void PushEvent(Fn fn, std::chrono::duration<Rep, Period> timeout_duration) {
-    std::cout << "timeout-queue push event." << std::endl;
     std::lock_guard<MutexType> guard(mtx_);
     time_out_queue_.emplace(Clock::now() + timeout_duration,
       Event{ std::move(fn), timeout_duration });

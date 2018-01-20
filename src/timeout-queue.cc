@@ -4,7 +4,6 @@
 
 
 void TimeoutQueue::Worker() {
-  std::cout << "timeout-queue worker starts." << std::endl;
   while (!quit_.load()) { // not quit
     UniqueLockType<MutexType> lock(mtx_);
     if (time_out_queue_.empty()) {
