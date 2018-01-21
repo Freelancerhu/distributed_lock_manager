@@ -1,8 +1,9 @@
 #ifndef _DLM_TEST_CLASS_H_
 #define _DLM_TEST_CLASS_H_
 
-#include <string>
 #include "cpp_redis/cpp_redis"
+
+#include <string>
 
 namespace dlm {
 class TestClass {

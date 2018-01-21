@@ -3,16 +3,16 @@
 #define _DLM_DB_REDIS_H_
 
 #include "cpp_redis/cpp_redis"
-#include "db-interface.h"
+
 #include <chrono>
 #include <string>
 #include <vector>
 
-namespace dlm {
-  extern enum class DBResult;
+#include "db-interface.h"
 
-  class DBRedis : public DBInterface
-  {
+namespace dlm {
+
+  class DBRedis : public DBInterface {
   public:
     // DBRedis();
     
@@ -35,7 +35,6 @@ namespace dlm {
   private:
     cpp_redis::client client;
   };
-
 } // namespace dlm
 
 #endif //_DLM_DB_REDIS_H_

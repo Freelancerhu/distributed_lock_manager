@@ -1,12 +1,12 @@
-#include "dmutex.h"
-#include "db-redis.h"
-#include "timeout-queue.h"
-
 #include <random> // std::default_random_engine
 #include <algorithm> // std::shuffle
 #include <thread> // std::this_thread::sleep_for
 #include <mutex>
 #include <memory>
+
+#include "dmutex.h"
+#include "db-redis.h"
+#include "timeout-queue.h"
 
 namespace dlm {
   class DMutexImpl {
@@ -24,6 +24,9 @@ namespace dlm {
     bool MainLockFunction();
 
   private:
+    void WaitUntil(std::chrono::milliseconds limited_time);
+    void KeepLock();
+
     const std::vector<int> hosts_;
     const std::string key_;
     std::string value_;
@@ -35,14 +38,16 @@ namespace dlm {
     std::chrono::milliseconds time_out_limit_{ 50 }; // the time prevents the client from remaining blocked for a long time
                                                       //trying to talk with a Redis node which is down
     static std::mutex mtx_;
-    //TimeoutQueue timeout_queue_ = TimeoutQueue::TimeoutQueueIns();
     // the status of lock
     bool lock_status_ = false;
-    void WaitUntil(std::chrono::milliseconds limited_time);
-    void KeepLock();
   };
 
   std::mutex DMutexImpl::mtx_;
+
+  static TimeoutQueue& TimeoutQueueIns() {
+    static TimeoutQueue temp_timeout_queue;
+    return temp_timeout_queue;
+  }
 
   static std::chrono::milliseconds GetCurrentMilliseconds() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -69,6 +74,7 @@ namespace dlm {
 
   void DMutexImpl::KeepLock() {
     for (int lock_index = 0; lock_index < have_lock_num_.size(); ++lock_index) {
+      std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
       mtx_.lock();
       if (lock_status_ == false) {
         mtx_.unlock();
@@ -92,6 +98,7 @@ namespace dlm {
   }
 
   bool DMutexImpl::UnlockAll() {
+    std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
     mtx_.lock();
     lock_status_ = false;
     int temp_lock_size = 0;
@@ -135,6 +142,7 @@ namespace dlm {
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     std::shuffle(temp_vec.begin(), temp_vec.end(), std::default_random_engine(start_time_milliseconds));
     for (int lock_index = 0; lock_index < temp_vec.size(); ++lock_index) {
+      std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
       mtx_.lock();
       //select another db
       DBResult temp_res = db_redis_client_.SelectDB(temp_vec[lock_index]);
@@ -163,11 +171,12 @@ namespace dlm {
       GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {
       std::cout << "have = " << have_lock_num_.size() << std::endl;
       std::cout << "host = " << hosts_.size() << std::endl;
+      std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
       mtx_.lock();
       lock_status_ = true;
       mtx_.unlock();
-      TimeoutQueue::TimeoutQueueIns().AsyncRun();
-      TimeoutQueue::TimeoutQueueIns().PushEvent([this]() {
+      TimeoutQueueIns().AsyncRun();
+      TimeoutQueueIns().PushEvent([this]() {
         KeepLock();
         return true;
       }, std::chrono::milliseconds(run_time_.count() / 3 * 2));
@@ -192,12 +201,12 @@ namespace dlm {
   DMutex::~DMutex() {
   }
 
-  bool DMutex::lock() {
-    return impl_->Lock();
+  void DMutex::lock() {
+    impl_->Lock();
   }
 
-  bool DMutex::unlock_all() {
-    return impl_->UnlockAll();
+  void DMutex::unlock() {
+    impl_->UnlockAll();
   }
 
   bool DMutex::try_lock() {
@@ -207,9 +216,4 @@ namespace dlm {
   bool DMutex::try_lock(const std::chrono::milliseconds &expire) {
     return impl_->TryLock(expire);
   }
-
-
-
-
-
 } // namespace dlm
