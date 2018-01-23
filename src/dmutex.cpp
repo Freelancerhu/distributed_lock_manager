@@ -46,7 +46,7 @@ namespace dlm {
   std::mutex DMutexImpl::mtx_;
 
   static TimeoutQueue& TimeoutQueueIns() {
-    static TimeoutQueue temp_timeout_queue;
+    static TimeoutQueue temp_timeout_queue(1);
     return temp_timeout_queue;
   }
 

@@ -27,9 +27,7 @@ public:
   using UniqueLockType = std::unique_lock<T>;
   using ConditionVariableType = std::condition_variable;
 
-  TimeoutQueue() {
-    AsyncRun();
-  }
+  TimeoutQueue() = default;
 
   explicit TimeoutQueue(size_t n) {
     for (size_t i=0; i<n; ++i)
