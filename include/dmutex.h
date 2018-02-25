@@ -9,7 +9,7 @@ namespace dlm {
 
 class DMutexImpl;
 
-  class DMutex {
+class DMutex {
   public:
     DMutex(const std::string &key, std::vector<int> &hosts,
       const std::chrono::milliseconds &temp_lock_validity_time_, const std::chrono::milliseconds &temp_run_time_);

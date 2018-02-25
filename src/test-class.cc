@@ -53,49 +53,8 @@ namespace dlm {
     client.sync_commit();
     //std::string d = del.get().as_string();
     std::cout << "d = " << del.get().is_integer() << std::endl;
-    
 
 
-   // std::cout << "===" << std::endl;
-   // int tempVal = 117;
-   // std::cout << equ("y", tempVal) << std::endl;
-	  //client & 	get (const std::string &key, const reply_callback_t &reply_callback)
-    //std::future<cpp_redis::reply> cget = client.get("y");
-    //cget.wait();
-    //tempRe = cget.get().as_string();
-    //std::cout << "???? " << tempRe << std::endl;
-
-    /*
-    if (tempRe == val) {
-      std::cout << "val equal!" << std::endl;
-      client.del(std::vector<std::string>{"huh"}, [](cpp_redis::reply& reply){
-        std::cout << "del hu 25 : " << reply << std::endl;
-        if (reply.as_integer() == int64_t(0)) {
-          std::cout << "fail" << std::endl;
-        }
-        else if (reply.as_integer() == int64_t(1)) {
-          std::cout << "succcess" << std::endl;
-        }
-       });
-    }
-    else {
-      std::cout << "cannot find val!" << std::endl;
-    }
-    std::cout << "===" << std::endl;
-    */
-
-
- /*   client.set("hello", "42", [](cpp_redis::reply& reply) {
-      std::cout << "set hello 42: " << reply << std::endl;
-    });
-
-    client.decrby("hello", 12, [](cpp_redis::reply& reply) {
-      std::cout << "decrby hello 12: " << reply << std::endl;
-    });
-
-    client.get("hello", [](cpp_redis::reply& reply) {
-      std::cout << "get hello: " << reply << std::endl;
-    });*/
     std::chrono::milliseconds span(1000); 
     
     std::future<cpp_redis::reply> foo = client.get("hea");
@@ -111,13 +70,7 @@ namespace dlm {
       std::cout << "fuckin shit" << std::endl;
     std::cout << "adfasf" << std::endl;
 
-    //client.decrby("hello", 12, [](cpp_redis::reply& reply) {
-    //  std::cout << "decrby hello 12: " << reply << std::endl;
-    //});
 
-    //client.get("hello", [](cpp_redis::reply& reply) {
-    //  std::cout << "get hello: " << reply << std::endl;
-    //});
   
   
   
