@@ -78,11 +78,11 @@ namespace dlm {
     std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
     lck.lock();
     if (lock_continue_ == false) {
-      std::cout << "lock_continue = false" << std::endl;
+      //std::cout << "lock_continue = false" << std::endl;
       return false;
     }
     if (lock_status_ == false) {
-      std::cout << "lock_status_ == false" << std::endl;
+      //std::cout << "lock_status_ == false" << std::endl;
       return true;
     }
     lck.unlock();
@@ -107,7 +107,7 @@ namespace dlm {
   }
 
   bool DMutexImpl::UnlockAll() {
-    std::cout << "unlock all" << std::endl;
+    //std::cout << "unlock all" << std::endl;
     std::unique_lock<std::mutex> lck(mtx_, std::defer_lock);
     lck.lock();
     lock_continue_ = false;
@@ -140,7 +140,7 @@ namespace dlm {
   bool DMutexImpl::TryLock(const std::chrono::milliseconds &expire) {
     uint64_t start_time_milliseconds = GetCurrentMilliseconds().count();
     do {
-      std::cout << "try lcok!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+      //std::cout << "try lcok!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
       have_lock_num_.clear();
       if (MainLockFunction()) return true;
       //WaitUntil(lock_validity_time_ / 3 * 2);
@@ -163,7 +163,7 @@ namespace dlm {
         DBResult temp_set_res = db_redis_client_.SetKeyValue(key_, value_, lock_validity_time_);
         lck.unlock();
         if (temp_set_res == DBResult::kSetKeySucceed) {
-          std::cout << "v = " << value_ << " res = " << temp_vec[lock_index] << std::endl;
+          //std::cout << "v = " << value_ << " res = " << temp_vec[lock_index] << std::endl;
           have_lock_num_.push_back(temp_vec[lock_index]);
           continue;
         }
@@ -181,8 +181,8 @@ namespace dlm {
     // If we got enough lock, unlock them until reach lock validity time.
     if ((have_lock_num_.size() >= (hosts_.size() / 2) + 1) &&
       GetCurrentMilliseconds().count() - start_time_milliseconds <= lock_validity_time_.count()) {
-      std::cout << "have = " << have_lock_num_.size() << std::endl;
-      std::cout << "host = " << hosts_.size() << std::endl;
+      //std::cout << "have = " << have_lock_num_.size() << std::endl;
+      //std::cout << "host = " << hosts_.size() << std::endl;
       lck.lock();
       lock_status_ = true;
       lock_continue_ = true;
@@ -197,6 +197,7 @@ namespace dlm {
     // we did not got enough lock, so we unlock all lock that we have.
     else {
       UnlockAll();
+      //std::cout << "ul" << std::endl;
       return false;
     }
   }
